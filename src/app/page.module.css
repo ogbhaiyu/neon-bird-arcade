@@ -1,142 +1,1049 @@
-.page {
-  --background: #fafafa;
-  --foreground: #fff;
-
-  --text-primary: #000;
-  --text-secondary: #666;
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
-
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
   display: flex;
-  flex: 1;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
+  gap: 2rem;
+  min-height: 100vh;
 }
 
-.main {
+.header {
+  text-align: center;
   display: flex;
-  flex: 1;
-  width: 100%;
-  max-width: 800px;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.title {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  background: linear-gradient(135deg, #00f0ff 0%, #ff0055 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.3));
+  text-transform: uppercase;
+}
+
+.subtitle {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Grid Layout */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 968px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Glass Panels */
+.panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 8px 32px 0 rgba(5, 3, 11, 0.4);
+}
+
+.panelTitle {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.75rem;
+  display: flex;
   justify-content: space-between;
-  background-color: var(--foreground);
-  padding: 120px 60px;
+  align-items: center;
 }
 
-.intro {
+/* Custom stats list */
+.statsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.statsLabel {
+  color: var(--text-muted);
+}
+
+.statsValue {
+  font-weight: 600;
+  font-family: var(--font-orbitron), sans-serif;
+}
+
+.statsValueHighlight {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+}
+
+/* Active Jackpot Card */
+.jackpotCard {
+  background: linear-gradient(135deg, rgba(154, 0, 255, 0.15) 0%, rgba(255, 0, 85, 0.15) 100%);
+  border: 1px solid rgba(255, 0, 85, 0.25);
+  border-radius: 12px;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 24px;
+  gap: 0.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
-}
-
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
-}
-
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.ctas {
-  display: flex;
-  flex-direction: row;
+.jackpotCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  max-width: 440px;
-  gap: 16px;
-  font-size: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-cyan));
+  animation: borderScroll 4s linear infinite;
 }
 
-.ctas a {
+@keyframes borderScroll {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.jackpotTitle {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: var(--neon-pink);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.jackpotValue {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: var(--neon-gold);
+  text-shadow: 0 0 15px rgba(255, 200, 0, 0.5);
+  margin: 0.25rem 0;
+}
+
+.countdownText {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.timer {
+  color: #ffffff;
+  font-family: var(--font-orbitron), sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Buttons */
+.button {
+  background: linear-gradient(135deg, var(--neon-purple) 0%, #6e00ff 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1.5rem;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  box-shadow: 0 4px 15px rgba(110, 0, 255, 0.3);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(110, 0, 255, 0.5), 0 0 8px rgba(110, 0, 255, 0.3);
+  background: linear-gradient(135deg, #af4eff 0%, var(--neon-purple) 100%);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.25);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.buttonPink {
+  background: linear-gradient(135deg, var(--neon-pink) 0%, #b3003b 100%);
+  box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3);
+}
+
+.buttonPink:hover {
+  background: linear-gradient(135deg, #ff4d88 0%, var(--neon-pink) 100%);
+  box-shadow: 0 6px 20px rgba(255, 0, 85, 0.5), 0 0 8px rgba(255, 0, 85, 0.3);
+}
+
+.buttonOutline {
+  background: transparent;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: var(--neon-cyan);
+  box-shadow: none;
+}
+
+.buttonOutline:hover {
+  background: rgba(0, 240, 255, 0.08);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Forms */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.inputLabel {
+  font-size: 0.75rem;
+  font-family: var(--font-orbitron), sans-serif;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.inputRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input {
+  flex: 1;
+  background: rgba(5, 3, 11, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2), inset 0 0 5px rgba(0, 240, 255, 0.05);
+}
+
+/* Select dropdown matching neon theme */
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%2300f0ff'%3E%3Cpath d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
   cursor: pointer;
-  width: fit-content;
-  font-weight: 500;
 }
 
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
+select.input option {
+  background: #0c0720;
+  color: #ffffff;
+  padding: 0.5rem;
+}
+/* Leaderboard styling */
+.leaderboardList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
-a.secondary {
-  border-color: var(--button-secondary-border);
+.leaderboardItem {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  gap: 1rem;
+  transition: all 0.25s ease;
 }
 
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
+.leaderboardItem:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+  transform: translateX(3px);
+}
 
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
+.leaderboardItemFirst {
+  background: linear-gradient(90deg, rgba(255, 200, 0, 0.12) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 200, 0, 0.35);
+  box-shadow: 0 0 15px rgba(255, 200, 0, 0.05);
+}
+
+.leaderboardItemFirst .rankBadge {
+  background: var(--neon-gold);
+  color: #000000;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(255, 200, 0, 0.4);
+}
+
+.leaderboardItemFirst .playerName {
+  color: var(--neon-gold);
+  font-weight: 700;
+}
+
+.rankBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-orbitron), sans-serif;
+  flex-shrink: 0;
+}
+
+.playerFlag {
+  width: 24px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.playerFlagPlaceholder {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+  line-height: 1;
+}
+
+.playerName {
+  flex: 1;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playerScore {
+  font-family: var(--font-orbitron), sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.emptyLeaderboard {
+  text-align: center;
+  padding: 2.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+/* Winners archive list */
+.winnersList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.winnerItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.winnerDate {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-family: var(--font-orbitron), sans-serif;
+}
+
+.winnerDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.winnerName {
+  font-weight: 600;
+}
+
+.winnerScore {
+  font-size: 0.8rem;
+  color: var(--neon-cyan);
+}
+
+.winnerStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.winnerPayout {
+  font-family: var(--font-orbitron), sans-serif;
+  color: var(--neon-gold);
+  font-weight: 700;
+}
+
+.statusTag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: var(--font-orbitron), sans-serif;
+}
+
+.statusPaid {
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+}
+
+.statusPending {
+  background: rgba(255, 0, 85, 0.1);
+  color: var(--neon-pink);
+  border: 1px solid rgba(255, 0, 85, 0.25);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.statusPending:hover {
+  background: rgba(255, 0, 85, 0.2);
+  transform: scale(1.05);
+}
+
+/* Info Banner */
+.infoBanner {
+  background: rgba(0, 240, 255, 0.03);
+  border: 1px dashed rgba(0, 240, 255, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.infoBanner strong {
+  color: var(--neon-cyan);
+}
+
+/* Dev Sandbox Simulator */
+.sandbox {
+  margin-top: 1.5rem;
+  background: rgba(255, 0, 85, 0.02);
+  border: 1px dashed rgba(255, 0, 85, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.sandboxTitle {
+  font-family: var(--font-orbitron), sans-serif;
+  color: var(--neon-pink);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sandboxGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .sandboxGrid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 600px) {
-  .main {
-    padding: 48px 24px;
-  }
+.sandboxCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 
-  .intro {
-    gap: 16px;
-  }
+.sandboxDesc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
 
-  .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
+.soundToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.soundIcon {
+  font-size: 1.25rem;
+}
+
+/* Game Status Overlay Inside Arcades */
+.gameOverSection {
+  background: rgba(12, 7, 26, 0.9);
+  border: 1px solid rgba(255, 0, 85, 0.4);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: panelSlideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
+.gameOverTitle {
+  font-family: var(--font-orbitron), sans-serif;
+  color: var(--neon-pink);
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+}
+
+.finalScore {
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.finalScoreNumber {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.warningBanner {
+  background: rgba(255, 0, 85, 0.15);
+  border: 1px solid var(--neon-pink);
+  border-radius: 12px;
+  padding: 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(255, 0, 85, 0.15);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.warningBanner strong {
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px rgba(255, 0, 85, 0.3);
+}
+
+.warningBanner code {
+  background: rgba(5, 3, 11, 0.6);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  color: var(--neon-cyan);
+}
+
+.cabinetContainer {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(7, 4, 16, 0.6);
+}
+
+.cabinetOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(7, 4, 16, 0.45);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+
+.tutorialSection {
+  background: rgba(12, 7, 26, 0.95);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  max-width: 560px;
+  box-sizing: border-box;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
+  animation: panelSlideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.tutorialTitle {
+  font-family: var(--font-orbitron), sans-serif;
+  color: var(--neon-cyan);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.tutorialHero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.tutorialPrize {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: var(--neon-gold);
+  text-shadow: 0 0 25px rgba(255, 200, 0, 0.5), 0 0 50px rgba(255, 200, 0, 0.2);
+  line-height: 1;
+  margin: 0.15rem 0;
+}
+
+.tutorialHook {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.3;
+  max-width: 320px;
+  margin: 0;
+}
+
+.tutorialHook strong {
+  color: var(--neon-gold);
+}
+
+/* Step flow: 1 → 2 → 3 */
+.tutorialSteps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.5rem 0;
+}
+
+.tutorialStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1;
+  text-align: center;
+}
+
+.stepNumber {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+}
+
+.stepText {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.3;
+}
+
+.stepText strong {
+  color: #ffffff;
+}
+
+.stepDivider {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: -0.7rem;
+}
+
+.tutorialWarning {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+.tutorialWarning strong {
+  color: var(--neon-pink);
+}
+
+.tutorialButtons {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.buttonPulse {
+  position: relative;
+  overflow: hidden;
+}
+
+.buttonPulse::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 30%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(30deg);
+  animation: shine 2.5s infinite ease-in-out;
+}
+
+@keyframes shine {
+  0% { left: -60%; }
+  100% { left: 140%; }
+}
+
+/* ===================== MOBILE RESPONSIVE ===================== */
+
+@media (max-width: 640px) {
+  .container {
+    padding: 1.25rem 0.75rem;
+    gap: 1.25rem;
   }
 
-  .page {
-    --background: #000;
-    --foreground: #000;
+  .header {
+    margin-bottom: 0;
+  }
 
-    --text-primary: #ededed;
-    --text-secondary: #999;
+  .title {
+    font-size: 1.8rem;
+    letter-spacing: 0.08em;
+  }
 
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
+  .subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+  }
+
+  .mainGrid {
+    gap: 1.25rem;
+  }
+
+  .panel {
+    padding: 1.15rem;
+    border-radius: 12px;
+    gap: 1rem;
+  }
+
+  .panelTitle {
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .jackpotCard {
+    padding: 1rem;
+  }
+
+  .jackpotValue {
+    font-size: 1.75rem;
+  }
+
+  .jackpotTitle {
+    font-size: 0.7rem;
+  }
+
+  .countdownText {
+    font-size: 0.75rem;
+  }
+
+  .button {
+    padding: 0.7rem 1rem;
+    font-size: 0.75rem;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .input {
+    padding: 0.7rem 0.85rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  .inputRow {
+    flex-direction: column;
+  }
+
+  .statsRow {
+    font-size: 0.85rem;
+  }
+
+  .statsValue {
+    font-size: 0.8rem;
+  }
+
+  .leaderboardList {
+    max-height: 260px;
+  }
+
+  .leaderboardItem {
+    padding: 0.6rem 0.75rem;
+    gap: 0.65rem;
+  }
+
+  .playerName {
+    font-size: 0.85rem;
+  }
+
+  .playerScore {
+    font-size: 0.95rem;
+  }
+
+  .emptyLeaderboard {
+    padding: 1.5rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .winnerItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .winnerStatus {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* On mobile, pop overlays out of the tiny canvas using fixed positioning */
+  .cabinetOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0.75rem;
+    z-index: 100;
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gameOverSection {
+    padding: 1.25rem;
+    margin-top: auto;
+    margin-bottom: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .gameOverTitle {
+    font-size: 1.4rem;
+  }
+
+  .finalScoreNumber {
+    font-size: 2rem;
+  }
+
+  .tutorialSection {
+    padding: 1.25rem 1rem;
+    height: auto;
+    max-height: none;
+    margin-top: auto;
+    margin-bottom: auto;
+    overflow-y: auto;
+    gap: 0.75rem;
+  }
+
+  .tutorialTitle {
+    font-size: 1rem;
+  }
+
+  .tutorialPrize {
+    font-size: 2.8rem;
+  }
+
+  .tutorialHook {
+    font-size: 0.72rem;
+  }
+
+  .tutorialSteps {
+    gap: 0.25rem;
+    padding: 0.35rem 0;
+  }
+
+  .stepNumber {
+    width: 22px;
+    height: 22px;
+    font-size: 0.6rem;
+  }
+
+  .stepText {
+    font-size: 0.6rem;
+  }
+
+  .stepDivider {
+    font-size: 0.75rem;
+    margin-top: -0.5rem;
+  }
+
+  .tutorialWarning {
+    font-size: 0.65rem;
+  }
+
+  .tutorialButtons {
+    gap: 0.5rem;
+    flex-direction: row;
+  }
+
+  .soundToggle {
+    font-size: 0.7rem;
+    gap: 0.4rem;
+  }
+
+  .soundIcon {
+    font-size: 1rem;
+  }
+
+  .infoBanner {
+    font-size: 0.78rem;
+    padding: 0.75rem;
+  }
+
+  .warningBanner {
+    font-size: 0.8rem;
+    padding: 1rem;
+  }
+
+  .sandbox {
+    padding: 1rem;
+  }
+
+  .sandboxTitle {
+    font-size: 0.85rem;
+  }
+
+  .sandboxDesc {
+    font-size: 0.72rem;
+  }
+}
+
+/* Extra small screens (320px–400px) */
+@media (max-width: 400px) {
+  .container {
+    padding: 1rem 0.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .jackpotValue {
+    font-size: 1.4rem;
+  }
+
+  .button {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.68rem;
+  }
+
+  .tutorialTitle {
+    font-size: 0.9rem;
+  }
+
+  .tutorialPrize {
+    font-size: 2.2rem;
   }
 }
