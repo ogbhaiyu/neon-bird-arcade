@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Neon Bird Arcade | Pay $5, Play, Win $10 Highstakes",
+  title: "Vector Wing Arcade | Pay $5, Play, Win $10 Highstakes",
   description: "Join the ultimate high-stakes retro arcade game. Purchase a ticket for $5, hold the highscore by the end of the 2-hour round, and win a $10 payout instantly.",
   keywords: ["Flappy Bird", "Arcade Game", "High Score Challenge", "NextJS", "Convex Backend", "Gumroad Payments"],
   icons: {
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   appleWebApp: {
-    title: "Neon Bird Arcade",
+    title: "Vector Wing Arcade",
   },
 };
 

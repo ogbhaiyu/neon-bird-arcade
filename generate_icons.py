@@ -44,7 +44,7 @@ svg_content = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" w
   <rect width="512" height="512" rx="128" fill="url(#bg-grad)" />
   <rect width="500" height="500" x="6" y="6" rx="122" fill="none" stroke="#00f0ff" stroke-opacity="0.15" stroke-width="4" />
 
-  <!-- The spaceship (Neon Bird) -->
+  <!-- The spaceship (Vector Wing) -->
   <g transform="translate(-10, 0)"> <!-- Slight left offset to center the visual weight -->
     <!-- Jet Core (Engine Flame) -->
     <circle cx="160" cy="256" r="48" fill="#ff0055" filter="url(#magenta-glow)" />

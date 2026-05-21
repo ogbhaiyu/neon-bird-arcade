@@ -68,9 +68,21 @@ export const COUNTRIES: { code: string; name: string }[] = [
   { code: "vn", name: "Vietnam" },
 ];
 
-// Returns a flag image URL for a given country code
-// Uses flagcdn.com which serves free SVG/PNG flags
-export function getFlagUrl(code: string | undefined, width: number = 24): string {
+export function getFlagUrl(code: string | undefined, width: number = 40): string {
   if (!code) return "";
-  return `https://flagcdn.com/w${width}/${code.toLowerCase()}.png`;
+  // flagcdn.com supports widths: w20, w40, w80, w160, w320, etc.
+  // Map requested width to one of the supported widths (rounding up/matching)
+  let flagWidth = 40;
+  if (width <= 20) {
+    flagWidth = 20;
+  } else if (width <= 40) {
+    flagWidth = 40;
+  } else if (width <= 80) {
+    flagWidth = 80;
+  } else if (width <= 160) {
+    flagWidth = 160;
+  } else {
+    flagWidth = 320;
+  }
+  return `https://flagcdn.com/w${flagWidth}/${code.toLowerCase()}.png`;
 }

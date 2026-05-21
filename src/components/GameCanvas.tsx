@@ -623,7 +623,7 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.fillStyle = "#00f0ff";
       ctx.shadowBlur = 15;
       ctx.shadowColor = "#00f0ff";
-      ctx.fillText("NEON BIRD", state.width / 2, state.height / 2 - 40);
+      ctx.fillText("VECTOR WING", state.width / 2, state.height / 2 - 40);
 
       ctx.font = '300 15px "Orbitron", sans-serif';
       ctx.fillStyle = "#ffffff";

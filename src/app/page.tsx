@@ -291,7 +291,7 @@ export default function Home() {
 
       {/* Header */}
       <header className={styles.header}>
-        <h1 className={styles.title}>Neon Bird</h1>
+        <h1 className={styles.title}>Vector Wing</h1>
         <p className={styles.subtitle}>Highstakes Retro Arcade</p>
       </header>
 
@@ -696,7 +696,7 @@ export default function Home() {
             <h2 className={styles.panelTitle}>🎮 How It Works & Win</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", fontSize: "0.85rem", lineHeight: 1.4, color: "var(--text-muted)" }}>
               <p>
-                Welcome to <strong>Neon Bird</strong>, a highstakes retro arcade game. Here is how you can win real cash prizes:
+                Welcome to <strong>Vector Wing</strong>, a highstakes retro arcade game. Here is how you can win real cash prizes:
               </p>
               <ul style={{ paddingLeft: "1.25rem", margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <li>
