@@ -535,6 +535,36 @@ class AudioSystem {
       console.warn("Failed to play game over theme:", e);
     }
   }
+
+  // Play a short, high-pitched crystal sweep-up chime when the player performs a near-miss stunt
+  playNearMiss() {
+    if (this.muted) return;
+    try {
+      this.init();
+      this.resume();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.type = "sine";
+      // High-pitched crystal synth sweep up
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1600, now + 0.08);
+
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.linearRampToValueAtTime(0.0001, now + 0.08);
+
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } catch (e) {
+      console.warn("Failed to play near miss sound:", e);
+    }
+  }
 }
 
 export const audioSystem = new AudioSystem();

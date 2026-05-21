@@ -32,6 +32,18 @@ interface Obstacle {
   passed: boolean;
   initialYCenter: number;
   spawnFrame: number;
+  nearMissTriggered?: boolean;
+}
+
+interface FloatingText {
+  id: number;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  alpha: number;
+  scale: number;
+  vy: number;
 }
 
 export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasProps) {
@@ -61,6 +73,11 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
     highScore: 0,
     isMuted,
     onGameOver,
+    engineThrust: 0,
+    gatePassRings: [] as { x: number; y: number; radius: number; maxRadius: number; alpha: number }[],
+    warpFactor: 1.0,
+    shieldPulse: 0.0,
+    floatTexts: [] as FloatingText[],
   });
 
   // Synchronize dynamic props on every render to prevent stale closures
@@ -103,6 +120,11 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
     state.shakeFrames = 0;
     state.shakeIntensity = 0;
     state.frameCount = 0;
+    state.engineThrust = 0;
+    state.gatePassRings = [];
+    state.warpFactor = 1.0;
+    state.shieldPulse = 0.0;
+    state.floatTexts = [];
 
     // Spawn first obstacle far enough
     spawnObstacle(state.width + 150);
@@ -125,6 +147,7 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       passed: false,
       initialYCenter: yCenter,
       spawnFrame: state.frameCount,
+      nearMissTriggered: false,
     });
   };
 
@@ -138,6 +161,9 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
     }
 
     state.birdVY = -5.8; // jump upward
+    state.engineThrust = 1.0;
+    state.warpFactor = 1.8; // Spike scrolling speed for warp inertia
+    state.shieldPulse = 1.0; // Trigger flap shield pulse
     
     // Play sound
     if (!state.isMuted) {
@@ -240,8 +266,14 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
     const state = stateRef.current;
     state.frameCount++;
 
-    // Parallax background scrolling
-    state.bgOffset = (state.bgOffset - 0.5) % state.width;
+    // Parallax background scrolling (scaled by warpFactor for flap momentum)
+    state.bgOffset = (state.bgOffset - 0.5 * state.warpFactor) % state.width;
+
+    // Decay warpFactor towards 1.0
+    state.warpFactor = Math.max(1.0, state.warpFactor - 0.02);
+
+    // Decay shieldPulse towards 0.0
+    state.shieldPulse = Math.max(0.0, state.shieldPulse - 0.04);
 
     // Update particles
     state.particles = state.particles.filter((p) => {
@@ -249,6 +281,24 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       p.y += p.vy;
       p.alpha -= p.decay;
       return p.alpha > 0;
+    });
+
+    // Update floating texts
+    state.floatTexts = state.floatTexts.filter((ft) => {
+      ft.y += ft.vy;
+      ft.alpha -= 0.02;
+      ft.scale = Math.max(0.6, ft.scale - 0.005);
+      return ft.alpha > 0;
+    });
+
+    // Update engine exhaust thrust value
+    state.engineThrust = Math.max(0, state.engineThrust - 0.05);
+
+    // Update gate pass rings
+    state.gatePassRings = state.gatePassRings.filter((ring) => {
+      ring.radius += 3.5;
+      ring.alpha -= 0.022;
+      return ring.alpha > 0;
     });
 
     if (!state.isPlaying) {
@@ -344,6 +394,28 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       if (!obs.passed && obs.x < 100) {
         obs.passed = true;
         state.score++;
+        
+        // Spawn glowing pass shockwave ring
+        state.gatePassRings.push({
+          x: obs.x + obs.width / 2,
+          y: obs.yCenter,
+          radius: 15,
+          maxRadius: 110,
+          alpha: 0.8,
+        });
+
+        // Spawn "+1" floating text
+        state.floatTexts.push({
+          id: Date.now() + Math.random(),
+          x: obs.x + obs.width / 2,
+          y: obs.yCenter - 25,
+          text: "+1",
+          color: "#00f0ff",
+          alpha: 1.0,
+          scale: 1.2,
+          vy: -1.0,
+        });
+
         if (!state.isMuted) {
           if (state.highScore > 0 && state.score > state.highScore && !state.hasPlayedHighScoreSound) {
             audioSystem.playHighScore();
@@ -361,15 +433,66 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
         }
       }
 
-      // Collision checks (Bird is a circle of radius 13 at x=100)
+      // Collision and near-miss checks (Bird is a circle of radius 13 at x=100)
       const birdRadius = 13;
       const birdX = 100;
 
       const topHeight = obs.yCenter - obs.gap / 2;
-      const bottomHeight = state.height - (obs.yCenter + obs.gap / 2);
+      const bottomHeightStart = obs.yCenter + obs.gap / 2;
+      const bottomHeight = state.height - bottomHeightStart;
 
       // Obstacle boundary check
       const inObstacleXRange = birdX + birdRadius > obs.x && birdX - birdRadius < obs.x + obs.width;
+      
+      // Near-miss check (only if we are in range and haven't triggered yet)
+      if (inObstacleXRange && !state.isDead && !obs.nearMissTriggered) {
+        const distTop = (state.birdY - birdRadius) - topHeight;
+        const distBottom = bottomHeightStart - (state.birdY + birdRadius);
+
+        if (distTop >= 0 && distBottom >= 0 && (distTop <= 10 || distBottom <= 10)) {
+          obs.nearMissTriggered = true;
+          state.score++; // Near miss grants 1 additional point!
+          
+          if (!state.isMuted) {
+            audioSystem.playNearMiss();
+          }
+
+          // Golden spark burst at the dodged edge
+          const sparkY = (distTop <= 10) ? topHeight : bottomHeightStart;
+          for (let i = 0; i < 15; i++) {
+            state.particles.push({
+              x: 100 + (Math.random() - 0.5) * 20,
+              y: sparkY + (Math.random() - 0.5) * 5,
+              vx: -1 - Math.random() * 2,
+              vy: (Math.random() - 0.5) * 3,
+              color: "#ffcc00", // Gold sparks
+              size: Math.random() * 2.5 + 1.5,
+              alpha: 1.0,
+              decay: 0.03 + Math.random() * 0.02,
+            });
+          }
+
+          // Floating text stunt popup
+          state.floatTexts.push({
+            id: Date.now() + Math.random(),
+            x: 100,
+            y: state.birdY - 20,
+            text: "NEAR MISS! +50",
+            color: "#ffcc00",
+            alpha: 1.0,
+            scale: 1.1,
+            vy: -1.2,
+          });
+
+          // Update local high score for the extra near-miss point
+          if (state.score > state.highScore) {
+            setHighScore(state.score);
+            state.highScore = state.score;
+            localStorage.setItem("flappy_high_score", state.score.toString());
+          }
+        }
+      }
+
       const hitTop = inObstacleXRange && state.birdY - birdRadius < topHeight;
       const hitBottom = inObstacleXRange && state.birdY + birdRadius > state.height - bottomHeight;
 
@@ -445,51 +568,136 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       state.shakeFrames--;
     }
 
-    // Clear Canvas
+    // Clear Canvas with rich dark retro space background
     ctx.fillStyle = "#0c071a";
     ctx.fillRect(0, 0, state.width, state.height);
 
-    // Draw Parallax Stars background
-    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-    for (let i = 0; i < 20; i++) {
-      const starX = ((i * 57 + state.bgOffset * 0.4) % state.width + state.width) % state.width;
+    // Draw Parallax Nebulas (soft glowing radial gradients)
+    const nebula1X = (state.width / 2) + Math.cos(state.frameCount * 0.002) * 100;
+    const nebula1Y = (state.height / 2) + Math.sin(state.frameCount * 0.003) * 60;
+    const grad1 = ctx.createRadialGradient(nebula1X, nebula1Y, 50, nebula1X, nebula1Y, 250);
+    grad1.addColorStop(0, "rgba(46, 5, 60, 0.32)"); // Deep purple-pink nebula
+    grad1.addColorStop(1, "rgba(12, 7, 26, 0)");
+    ctx.fillStyle = grad1;
+    ctx.beginPath();
+    ctx.arc(nebula1X, nebula1Y, 250, 0, Math.PI * 2);
+    ctx.fill();
+
+    const nebula2X = (state.width * 0.8) + Math.sin(state.frameCount * 0.0015) * 80;
+    const nebula2Y = (state.height * 0.3) + Math.cos(state.frameCount * 0.0025) * 50;
+    const grad2 = ctx.createRadialGradient(nebula2X, nebula2Y, 30, nebula2X, nebula2Y, 180);
+    grad2.addColorStop(0, "rgba(5, 40, 80, 0.25)"); // Deep cyan-blue nebula
+    grad2.addColorStop(1, "rgba(12, 7, 26, 0)");
+    ctx.fillStyle = grad2;
+    ctx.beginPath();
+    ctx.arc(nebula2X, nebula2Y, 180, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw Parallax Stars background (2 layers)
+    // Layer 1 (Far, slow)
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    for (let i = 0; i < 25; i++) {
+      const starX = ((i * 57 + state.bgOffset * 0.2) % state.width + state.width) % state.width;
       const starY = (i * 23) % state.height;
-      const starSize = (i % 3 === 0) ? 2.5 : 1.2;
+      ctx.fillRect(starX, starY, 1, 1);
+    }
+    // Layer 2 (Near, faster)
+    ctx.fillStyle = "rgba(0, 240, 255, 0.22)"; // Glowing cyan stars
+    for (let i = 0; i < 15; i++) {
+      const starX = ((i * 83 + state.bgOffset * 0.5) % state.width + state.width) % state.width;
+      const starY = (i * 37) % state.height;
+      const starSize = (i % 3 === 0) ? 2 : 1.2;
       ctx.fillRect(starX, starY, starSize, starSize);
     }
 
-    // Draw Grid Floor (aesthetic scrolling lines)
-    ctx.strokeStyle = "rgba(0, 240, 255, 0.06)";
-    ctx.lineWidth = 1;
-    const gridSpacing = 40;
-    const floorY = state.height - 20;
+    // Synthwave Perspective Grid Floor
+    const floorY = state.height - 35; // Floor start y
+    const horizonY = floorY - 30;     // Horizon y
+    
+    // Horizon glow
+    const horizonGlow = ctx.createLinearGradient(0, horizonY - 15, 0, floorY);
+    horizonGlow.addColorStop(0, "rgba(255, 0, 85, 0)");
+    horizonGlow.addColorStop(0.3, "rgba(255, 0, 85, 0.18)"); // Hot pink horizon pulse
+    horizonGlow.addColorStop(1, "rgba(0, 240, 255, 0)");
+    ctx.fillStyle = horizonGlow;
+    ctx.fillRect(0, horizonY - 15, state.width, 45);
 
-    // Scrolling vertical grid lines
-    const lineOffset = (state.bgOffset * 0.8) % gridSpacing;
-    for (let x = lineOffset; x < state.width; x += gridSpacing) {
+    // Draw Synthwave Horizon Sun (Pulsating and sliced with scanlines)
+    const sunRadius = 55;
+    const sunX = state.width / 2;
+    const sunY = horizonY;
+
+    ctx.save();
+    // Clip to upper half of the sun
+    ctx.beginPath();
+    ctx.rect(sunX - sunRadius - 10, sunY - sunRadius - 10, sunRadius * 2 + 20, sunRadius + 10);
+    ctx.clip();
+
+    // Pulse size gently
+    const pulseRadius = sunRadius + Math.sin(state.frameCount * 0.03) * 1.5;
+
+    // Create retro gradient
+    const sunGrad = ctx.createLinearGradient(0, sunY - pulseRadius, 0, sunY);
+    sunGrad.addColorStop(0.0, "#ff0055"); // Hot pink top
+    sunGrad.addColorStop(0.5, "#ff5500"); // Orange mid
+    sunGrad.addColorStop(1.0, "#ffcc00"); // Yellow bottom
+
+    ctx.fillStyle = sunGrad;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = "#ff0055";
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, pulseRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Cut horizontal slices
+    ctx.fillStyle = "#0c071a";
+    const sliceCount = 6;
+    for (let i = 0; i < sliceCount; i++) {
+      const sliceY = sunY - (i + 1) * (pulseRadius / (sliceCount + 1));
+      const sliceHeight = 2.5 + i * 1.5; // Thicker towards bottom
+      ctx.fillRect(sunX - pulseRadius - 10, sliceY, pulseRadius * 2 + 20, sliceHeight);
+    }
+    ctx.restore();
+
+    // Draw vanishing perspective grid lines
+    ctx.strokeStyle = "rgba(0, 240, 255, 0.08)";
+    ctx.lineWidth = 1;
+    const centerX = state.width / 2;
+    const numVanishingLines = 18;
+    for (let i = -numVanishingLines; i <= numVanishingLines; i++) {
       ctx.beginPath();
-      ctx.moveTo(x, floorY - 30);
-      ctx.lineTo(x - 20, floorY);
+      ctx.moveTo(centerX, horizonY);
+      // Project lines outward to the bottom edge, shifting slightly with background offset
+      const targetX = centerX + i * 50;
+      ctx.lineTo(targetX + (state.bgOffset * 0.6) % 50, state.height);
       ctx.stroke();
     }
-    // Horizontal floor grid lines
-    ctx.beginPath();
-    ctx.moveTo(0, floorY - 30);
-    ctx.lineTo(state.width, floorY - 30);
-    ctx.moveTo(0, floorY - 15);
-    ctx.lineTo(state.width, floorY - 15);
-    ctx.moveTo(0, floorY);
-    ctx.lineTo(state.width, floorY);
-    ctx.stroke();
+    
+    // Draw horizontal perspective grid lines
+    const numHorizontalLines = 7;
+    for (let i = 0; i < numHorizontalLines; i++) {
+      const animOffset = ((state.bgOffset * 0.4) % 40) / 40; // Scrolling factor
+      const ratio = (i + animOffset) / numHorizontalLines;
+      const ay = horizonY + (state.height - horizonY) * Math.pow(ratio, 2);
+      
+      // Lines fade out closer to the horizon
+      const opacity = ratio * 0.14;
+      ctx.strokeStyle = `rgba(0, 240, 255, ${opacity})`;
+      ctx.beginPath();
+      ctx.moveTo(0, ay);
+      ctx.lineTo(state.width, ay);
+      ctx.stroke();
+    }
 
     // Draw Obstacles (Pillars)
-    state.obstacles.forEach((obs) => {
+    state.obstacles.forEach((obs, idx) => {
       // Dynamically calculate heights based on yCenter and gap
       const topHeight = obs.yCenter - obs.gap / 2;
       const bottomHeight = state.height - (obs.yCenter + obs.gap / 2);
 
       // Glow filter settings
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 10;
       ctx.lineWidth = 2.5;
 
       // Draw Top Pillar
@@ -497,7 +705,6 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.strokeStyle = "#ff0055";
       ctx.fillStyle = "rgba(255, 0, 85, 0.08)";
       
-      // Box path
       ctx.beginPath();
       ctx.rect(obs.x, 0, obs.width, topHeight);
       ctx.fill();
@@ -507,12 +714,26 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.fillStyle = "#ff0055";
       ctx.fillRect(obs.x - 3, topHeight - 14, obs.width + 6, 14);
 
+      // Inner details for top pillar (ribs / power core glow)
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(255, 0, 85, 0.18)";
+      ctx.lineWidth = 1;
+      const topRibs = Math.floor(topHeight / 25);
+      for (let r = 1; r < topRibs; r++) {
+        const ry = r * 25;
+        ctx.beginPath();
+        ctx.moveTo(obs.x + 3, ry);
+        ctx.lineTo(obs.x + obs.width - 3, ry);
+        ctx.stroke();
+      }
+
       // Draw Bottom Pillar
+      ctx.shadowBlur = 10;
       ctx.shadowColor = "#00f0ff"; // Cyan neon glow for bottom gate
       ctx.strokeStyle = "#00f0ff";
       ctx.fillStyle = "rgba(0, 240, 255, 0.08)";
+      ctx.lineWidth = 2.5;
       
-      // Box path
       ctx.beginPath();
       ctx.rect(obs.x, state.height - bottomHeight, obs.width, bottomHeight);
       ctx.fill();
@@ -521,9 +742,24 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       // Bottom Gate lip (top edge of bottom pillar)
       ctx.fillStyle = "#00f0ff";
       ctx.fillRect(obs.x - 3, state.height - bottomHeight, obs.width + 6, 14);
+
+      // Inner details for bottom pillar (ribs)
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(0, 240, 255, 0.18)";
+      ctx.lineWidth = 1;
+      const bottomRibs = Math.floor(bottomHeight / 25);
+      for (let r = 1; r < bottomRibs; r++) {
+        const ry = state.height - bottomHeight + r * 25;
+        if (ry < state.height - 10) {
+          ctx.beginPath();
+          ctx.moveTo(obs.x + 3, ry);
+          ctx.lineTo(obs.x + obs.width - 3, ry);
+          ctx.stroke();
+        }
+      }
     });
 
-    // Reset shadow blur for other drawings
+    // Reset shadow blur
     ctx.shadowBlur = 0;
 
     // Draw Particles
@@ -534,43 +770,158 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     });
-    ctx.globalAlpha = 1.0; // reset alpha
+    ctx.globalAlpha = 1.0; // Reset alpha
 
-    // Draw Bird (Futuristic triangular neon spaceship)
-    if (!state.isDead || state.birdY < state.height) {
+    // Draw Gate Pass Rings
+    state.gatePassRings.forEach((ring) => {
+      ctx.save();
+      ctx.strokeStyle = `rgba(0, 240, 255, ${ring.alpha})`;
+      ctx.lineWidth = 2.5;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = "#00f0ff";
+      
+      ctx.beginPath();
+      ctx.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // Draw Exhaust Flame for Spaceship
+    if (!state.isDead && state.isPlaying && !state.waitingToStart) {
       ctx.save();
       ctx.translate(100, state.birdY);
       ctx.rotate(state.birdAngle);
 
-      // Neon spacecraft design
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = "#00f0ff";
-      ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#00f0ff";
-      ctx.lineWidth = 2.5;
+      // Exhaust flame grows with engineThrust and flickers randomly
+      const flameLen = 8 + state.engineThrust * 24 + Math.random() * 6;
+      const flameWidth = 5 + state.engineThrust * 6;
 
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#ff0055"; // Engine plume color
+      
+      const flameGrad = ctx.createLinearGradient(-8, 0, -8 - flameLen, 0);
+      flameGrad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+      flameGrad.addColorStop(0.2, "rgba(0, 240, 255, 0.85)"); // Cyan core
+      flameGrad.addColorStop(0.6, "rgba(255, 0, 85, 0.5)");   // Magenta outer plume
+      flameGrad.addColorStop(1, "rgba(255, 0, 85, 0)");
+
+      ctx.fillStyle = flameGrad;
       ctx.beginPath();
-      // Draw spaceship points (facing right)
-      ctx.moveTo(14, 0);       // nose
-      ctx.lineTo(-12, -9);     // top wing
-      ctx.lineTo(-7, 0);       // engine center
-      ctx.lineTo(-12, 9);      // bottom wing
+      ctx.moveTo(-6, 0);
+      ctx.lineTo(-12, -flameWidth / 2);
+      ctx.lineTo(-8 - flameLen, 0);
+      ctx.lineTo(-12, flameWidth / 2);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Jet core (internal engine glow)
-      ctx.shadowBlur = 4;
-      ctx.shadowColor = "#ff0055";
-      ctx.fillStyle = "#ff0055";
-      ctx.beginPath();
-      ctx.arc(-5, 0, 3, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
     }
 
-    // Draw HUD Score (during active gameplay)
+    // Draw Bird (Spaceship)
+    if (!state.isDead || state.birdY < state.height) {
+      ctx.save();
+      ctx.translate(100, state.birdY);
+      ctx.rotate(state.birdAngle);
+
+      if (state.isDead) {
+        // Chromatic split glitching effect on crash
+        const offset = Math.sin(state.frameCount * 0.55) * 4.0;
+        
+        // Cyan shifted wing silhouette
+        ctx.save();
+        ctx.translate(-offset, 0);
+        ctx.strokeStyle = "#00f0ff";
+        ctx.fillStyle = "rgba(0, 240, 255, 0.4)";
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(14, 0);
+        ctx.lineTo(-12, -9);
+        ctx.lineTo(-7, 0);
+        ctx.lineTo(-12, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // Magenta shifted wing silhouette
+        ctx.save();
+        ctx.translate(offset, 0);
+        ctx.strokeStyle = "#ff0055";
+        ctx.fillStyle = "rgba(255, 0, 85, 0.4)";
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(14, 0);
+        ctx.lineTo(-12, -9);
+        ctx.lineTo(-7, 0);
+        ctx.lineTo(-12, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        // Neon spacecraft design
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = "#00f0ff";
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#00f0ff";
+        ctx.lineWidth = 2.5;
+
+        ctx.beginPath();
+        ctx.moveTo(14, 0);       // Nose
+        ctx.lineTo(-12, -9);     // Top wing
+        ctx.lineTo(-7, 0);       // Engine center
+        ctx.lineTo(-12, 9);      // Bottom wing
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Shield aura surrounding the ship
+        ctx.strokeStyle = "rgba(0, 240, 255, 0.22)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, 17 + Math.sin(state.frameCount * 0.1) * 1.5, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Pulsating shield expand on flap
+        if (state.shieldPulse > 0.0) {
+          ctx.strokeStyle = `rgba(0, 240, 255, ${state.shieldPulse * 0.6})`;
+          ctx.lineWidth = 1.5 + state.shieldPulse * 2.0;
+          ctx.beginPath();
+          const baseRadius = 17 + Math.sin(state.frameCount * 0.1) * 1.5;
+          ctx.arc(0, 0, baseRadius + state.shieldPulse * 16, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Jet core (internal engine glow)
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = "#ff0055";
+        ctx.fillStyle = "#ff0055";
+        ctx.beginPath();
+        ctx.arc(-5, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    // Draw Floating Texts
+    state.floatTexts.forEach((ft) => {
+      ctx.save();
+      ctx.globalAlpha = ft.alpha;
+      ctx.font = `bold ${Math.round(14 * ft.scale)}px "Orbitron", sans-serif`;
+      ctx.fillStyle = ft.color;
+      ctx.textAlign = "center";
+      
+      // Neon glow
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = ft.color;
+      
+      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1.0;
+
+    // Draw HUD Score
     if (state.isPlaying) {
       ctx.font = 'bold 26px "Orbitron", sans-serif';
       ctx.fillStyle = "#ffffff";
@@ -583,9 +934,8 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.shadowBlur = 0;
     }
 
-    // Draw Pre-flight overlay instructions when waiting to start
+    // Draw Pre-flight instructions
     if (state.isPlaying && state.waitingToStart) {
-      // Semitransparent cabinet tint overlay for focus
       ctx.fillStyle = "rgba(12, 7, 26, 0.4)";
       ctx.fillRect(0, 0, state.width, state.height);
 
@@ -598,7 +948,7 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.shadowColor = "#00f0ff";
       ctx.fillText("GET READY", state.width / 2, state.height / 2 - 50);
 
-      // Pulse text effect for instructions
+      // Pulse text effect
       const pulse = Math.abs(Math.sin(state.frameCount / 15));
       ctx.font = 'bold 15px "Orbitron", sans-serif';
       ctx.fillStyle = `rgba(255, 0, 85, ${0.35 + pulse * 0.65})`;
@@ -613,7 +963,7 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.fillText("NAVIGATE NEON GATES | AVOID COLLISIONS", state.width / 2, state.height / 2 + 85);
     }
 
-    // Draw Attract Screen (when not playing)
+    // Draw Attract Screen
     if (!state.isPlaying) {
       ctx.fillStyle = "rgba(12, 7, 26, 0.72)";
       ctx.fillRect(0, 0, state.width, state.height);
@@ -629,7 +979,7 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.fillStyle = "#ffffff";
       ctx.shadowBlur = 4;
       ctx.shadowColor = "#ff0055";
-      ctx.fillText("HIGH-STAKES ARCADE", state.width / 2, state.height / 2 - 12);
+      ctx.fillText("HIGH-STAKES RETRO ARCADE", state.width / 2, state.height / 2 - 12);
 
       // Pulse text effect
       const pulse = Math.abs(Math.sin(state.frameCount / 20));
@@ -642,16 +992,54 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
       ctx.font = '400 13px "Orbitron", sans-serif';
       ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
       ctx.shadowBlur = 0;
-      ctx.fillText(`PERSONAL HIGH SCORE: ${highScore}`, state.width / 2, state.height / 2 + 100);
+      ctx.fillText(`PERSONAL HIGH SCORE: ${state.highScore}`, state.width / 2, state.height / 2 + 100);
+    }
+
+    // CRT Scanline Static Glitch Overlay
+    if (state.isDead) {
+      ctx.save();
+      const glitchCount = Math.floor(Math.random() * 4);
+      for (let i = 0; i < glitchCount; i++) {
+        const gy = Math.random() * state.height;
+        const gh = Math.random() * 30 + 5;
+        const shiftX = (Math.random() - 0.5) * 15;
+        
+        ctx.fillStyle = "rgba(0, 240, 255, 0.12)";
+        ctx.fillRect(0, gy, state.width, gh);
+        
+        ctx.fillStyle = "rgba(255, 0, 85, 0.12)";
+        ctx.fillRect(shiftX, gy + 2, state.width, gh);
+      }
+      
+      if (Math.random() < 0.45) {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = Math.random() * 2 + 1;
+        ctx.beginPath();
+        const ny = Math.random() * state.height;
+        ctx.moveTo(0, ny);
+        ctx.lineTo(state.width, ny);
+        ctx.stroke();
+      }
+
+      if (Math.random() < 0.15) {
+        ctx.fillStyle = Math.random() > 0.5 ? "#00f0ff" : "#ff0055";
+        ctx.fillRect(
+          Math.random() * state.width, 
+          Math.random() * state.height, 
+          Math.random() * 120 + 30, 
+          Math.random() * 12 + 4
+        );
+      }
+      ctx.restore();
     }
 
     ctx.restore(); // Restore screen shake state
-  };
+  }
 
   return (
     <div 
       ref={containerRef} 
-      className="w-full relative flex items-center justify-center overflow-hidden rounded-xl border border-[rgba(255,0,85,0.25)] bg-[#070410] cursor-pointer"
+      className="w-full relative flex items-center justify-center overflow-hidden rounded-xl border border-[rgba(255,0,85,0.25)] bg-[#070410] cursor-pointer group"
       onClick={handleFlap}
       style={{
         boxShadow: "0 0 30px rgba(7, 4, 16, 0.6), inset 0 0 20px rgba(0, 240, 255, 0.05)",
@@ -659,11 +1047,27 @@ export default function GameCanvas({ playId, onGameOver, isMuted }: GameCanvasPr
         WebkitTapHighlightColor: "transparent",
       }}
     >
+      {/* CRT Scanline Overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-10 opacity-[0.14]"
+        style={{
+          background: "linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%)",
+          backgroundSize: "100% 4px",
+        }}
+      />
+      {/* Chromatic RGB Grid Overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-10 opacity-[0.03]"
+        style={{
+          background: "linear-gradient(90deg, rgba(255, 0, 0, 0.8), rgba(0, 255, 0, 0.2), rgba(0, 0, 255, 0.8))",
+          backgroundSize: "6px 100%",
+        }}
+      />
       <canvas 
         ref={canvasRef} 
         width={CANVAS_WIDTH} 
         height={CANVAS_HEIGHT}
-        className="block max-w-full"
+        className="block max-w-full relative z-0 transition-transform duration-300 group-hover:scale-[1.01]"
         style={{ width: "100%", height: "auto", aspectRatio: "64 / 45" }}
       />
     </div>

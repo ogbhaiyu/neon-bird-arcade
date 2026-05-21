@@ -85,6 +85,14 @@ export const verifyAndRedeemLicense = action({
       throw new Error("This license key cannot be used due to a chargeback dispute.");
     }
 
+    // Check for expired or failed subscription
+    if (purchase.subscription_ended_at) {
+      throw new Error("This subscription has ended. Please renew to get more plays.");
+    }
+    if (purchase.subscription_failed_at) {
+      throw new Error("This subscription payment failed. Please update your billing details.");
+    }
+
     // 4. Increment uses count on Gumroad to claim the license
     const claimParams = new URLSearchParams();
     claimParams.append("product_id", productId);

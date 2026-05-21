@@ -65,9 +65,10 @@ export const submitScore = mutation({
     // ANTI-CHEAT VALIDATION
     // Flappy bird speed is constant. In our game, the gap between obstacles 
     // will take approx 1.6 seconds to reach.
-    // Minimum time required for score S is (S * 1.5) seconds.
+    // Near misses grant an additional point, meaning max score per gate is 2.
+    // Minimum time required for score S is (S * 0.75) seconds.
     // We allow a small buffer for the initial launch (e.g. 1.0 second).
-    const minRequiredTimeMs = score > 0 ? (score * 1500) - 1000 : 0;
+    const minRequiredTimeMs = score > 0 ? (score * 750) - 1000 : 0;
 
     if (durationMs < minRequiredTimeMs) {
       // Reject score
