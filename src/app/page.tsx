@@ -20,6 +20,8 @@ export default function Home() {
   const [currentPlayId, setCurrentPlayId] = useState<string | null>(null);
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState("24h 00m 00s");
   const [licenseInput, setLicenseInput] = useState("");
   
@@ -354,24 +356,98 @@ export default function Home() {
                           disabled={isSubmitting}
                         />
                       </div>
-                      <div className={styles.inputGroup}>
-                        <label htmlFor="countrySelect" className={styles.inputLabel}>
+                      <div className={styles.inputGroup} style={{ position: "relative" }}>
+                        <label htmlFor="countrySearchInput" className={styles.inputLabel}>
                           Represent Your Country
                         </label>
-                        <select
-                          id="countrySelect"
-                          value={selectedCountry}
-                          onChange={(e) => setSelectedCountry(e.target.value)}
-                          className={styles.input}
-                          disabled={isSubmitting}
-                        >
-                          <option value="">Select your country...</option>
-                          {COUNTRIES.map((c) => (
-                            <option key={c.code} value={c.code}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
+                        <div style={{ position: "relative" }}>
+                          {/* Flag preview inside input */}
+                          {selectedCountry && (
+                            <img
+                              src={getFlagUrl(selectedCountry, 24)}
+                              alt={selectedCountry}
+                              style={{
+                                position: "absolute",
+                                left: "12px",
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                width: 24,
+                                height: 16,
+                                objectFit: "cover",
+                                borderRadius: 2,
+                                zIndex: 2,
+                              }}
+                            />
+                          )}
+                          <input
+                            id="countrySearchInput"
+                            type="text"
+                            autoComplete="off"
+                            placeholder={selectedCountry ? COUNTRIES.find(c => c.code === selectedCountry)?.name : "Search your country..."}
+                            value={countrySearch}
+                            onChange={(e) => { setCountrySearch(e.target.value); setCountryOpen(true); }}
+                            onFocus={() => setCountryOpen(true)}
+                            onBlur={() => setTimeout(() => setCountryOpen(false), 150)}
+                            className={styles.input}
+                            disabled={isSubmitting}
+                            style={{ paddingLeft: selectedCountry ? 44 : 14 }}
+                          />
+                        </div>
+                        {countryOpen && (
+                          <div style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            zIndex: 100,
+                            background: "#1a0a2e",
+                            border: "1px solid #ff2d78",
+                            borderRadius: 8,
+                            maxHeight: 200,
+                            overflowY: "auto",
+                            boxShadow: "0 8px 32px rgba(255,45,120,0.25)",
+                          }}>
+                            {COUNTRIES.filter(c =>
+                              c.name.toLowerCase().includes(countrySearch.toLowerCase())
+                            ).length === 0 ? (
+                              <div style={{ padding: "10px 14px", color: "#888", fontSize: 13 }}>No countries found</div>
+                            ) : (
+                              COUNTRIES.filter(c =>
+                                c.name.toLowerCase().includes(countrySearch.toLowerCase())
+                              ).map((c) => (
+                                <div
+                                  key={c.code}
+                                  onMouseDown={() => {
+                                    setSelectedCountry(c.code);
+                                    setCountrySearch("");
+                                    setCountryOpen(false);
+                                  }}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    padding: "8px 14px",
+                                    cursor: "pointer",
+                                    background: selectedCountry === c.code ? "rgba(255,45,120,0.18)" : "transparent",
+                                    color: selectedCountry === c.code ? "#ff2d78" : "#e0e0e0",
+                                    fontSize: 13,
+                                    fontFamily: "inherit",
+                                    transition: "background 0.15s",
+                                  }}
+                                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,45,120,0.1)")}
+                                  onMouseLeave={e => (e.currentTarget.style.background = selectedCountry === c.code ? "rgba(255,45,120,0.18)" : "transparent")}
+                                >
+                                  <img
+                                    src={getFlagUrl(c.code, 24)}
+                                    alt={c.name}
+                                    style={{ width: 24, height: 16, objectFit: "cover", borderRadius: 2, flexShrink: 0 }}
+                                  />
+                                  <span>{c.name}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
                       </div>
                       <button 
                         type="submit" 
