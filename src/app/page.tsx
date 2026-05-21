@@ -198,6 +198,7 @@ export default function Home() {
       const result = await redeemLicenseAction({
         email,
         licenseKey: license,
+        productId: process.env.NEXT_PUBLIC_GUMROAD_PRODUCT_ID,
       });
 
       if (result && result.success) {
