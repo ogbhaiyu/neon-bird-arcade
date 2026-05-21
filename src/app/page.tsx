@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Script from "next/script";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation, useAction, useConvex } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import GameCanvas from "../components/GameCanvas";
 import audioSystem from "../components/AudioSystem";
@@ -11,6 +11,7 @@ import { COUNTRIES, getFlagUrl } from "../components/countries";
 import styles from "./page.module.css";
 
 export default function Home() {
+  const convex = useConvex();
   // Client States
   const [emailInput, setEmailInput] = useState("");
   const [activeEmail, setActiveEmail] = useState("");
@@ -189,33 +190,44 @@ export default function Home() {
       setErrorMsg("Please enter an email address.");
       return;
     }
-    if (!license) {
-      setErrorMsg("Please enter your license key.");
-      return;
-    }
 
     setIsSubmitting(true);
 
     try {
-      const result = await redeemLicenseAction({
-        email,
-        licenseKey: license,
-        productId: process.env.NEXT_PUBLIC_GUMROAD_PRODUCT_ID,
-      });
-
-      if (result && result.success) {
-        setActiveEmail(email);
-        localStorage.setItem("flappy_active_email", email);
-        setLicenseInput("");
-        setSuccessMsg(result.message || "License successfully verified!");
-        if (!isMuted) {
-          audioSystem.playReady();
+      if (!license) {
+        // License key is optional if there's already an active ticket with remaining plays
+        const active = await convex.query(api.tickets.getActiveTicket, { email });
+        if (active && active.playsRemaining > 0 && active.status === "active") {
+          setActiveEmail(email);
+          localStorage.setItem("flappy_active_email", email);
+          setSuccessMsg(`Session loaded! You have ${active.playsRemaining} play(s) remaining.`);
+          if (!isMuted) {
+            audioSystem.playReady();
+          }
+        } else {
+          throw new Error("No active plays remaining. Please enter your Gumroad license key to redeem more plays.");
         }
       } else {
-        throw new Error("License verification failed.");
+        const result = await redeemLicenseAction({
+          email,
+          licenseKey: license,
+          productId: process.env.NEXT_PUBLIC_GUMROAD_PRODUCT_ID,
+        });
+
+        if (result && result.success) {
+          setActiveEmail(email);
+          localStorage.setItem("flappy_active_email", email);
+          setLicenseInput("");
+          setSuccessMsg(result.message || "License successfully verified and claimed!");
+          if (!isMuted) {
+            audioSystem.playReady();
+          }
+        } else {
+          throw new Error("License verification failed.");
+        }
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "Verification failed. Please check your license key and email.");
+      setErrorMsg(err.message || "Verification failed. Please check your credentials.");
       if (!isMuted) {
         audioSystem.playError();
       }
@@ -661,16 +673,15 @@ export default function Home() {
 
                    <div className={styles.inputGroup} style={{ marginTop: "0.5rem" }}>
                     <label htmlFor="ticketLicense" className={styles.inputLabel}>
-                      License Key
+                      License Key <span style={{ opacity: 0.6, fontSize: "0.8em" }}>(Optional)</span>
                     </label>
                     <input
                       type="text"
                       id="ticketLicense"
-                      placeholder="e.g. AAAA-BBBB-CCCC"
+                      placeholder="e.g. AAAA-BBBB-CCCC (optional if active plays remain)"
                       value={licenseInput}
                       onChange={(e) => setLicenseInput(e.target.value)}
                       className={styles.input}
-                      required
                       disabled={isSubmitting}
                     />
                   </div>
